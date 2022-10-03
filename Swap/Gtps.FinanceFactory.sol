@@ -2,10 +2,10 @@
 
 pragma solidity =0.6.12;
 
-import './interfaces/ICatFactory.sol';
-import './CatPair.sol';
+import './interfaces/IGtps.FinanceFactory.sol';
+import './Gtps.FinancePair.sol';
 
-contract CatFactory is ICatFactory {
+contract Gtps.FinanceFactory is IGtps.FinanceFactory {
     address public override feeTo;
     address public override feeToSetter;
 
@@ -23,20 +23,20 @@ contract CatFactory is ICatFactory {
     }
 
     function pairCodeHash() external pure returns (bytes32) {
-        return keccak256(type(CatPair).creationCode);
+        return keccak256(type(Gtps.FinancePair).creationCode);
     }
 
     function createPair(address tokenA, address tokenB) external override returns (address pair) {
-        require(tokenA != tokenB, 'PolyCat: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'Gtps.Finance: IDENTICAL_ADDRESSES');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'PolyCat: ZERO_ADDRESS');
-        require(getPair[token0][token1] == address(0), 'PolyCat: PAIR_EXISTS'); // single check is sufficient
-        bytes memory bytecode = type(CatPair).creationCode;
+        require(token0 != address(0), 'Gtps.Finance: ZERO_ADDRESS');
+        require(getPair[token0][token1] == address(0), 'Gtps.Finance: PAIR_EXISTS'); // single check is sufficient
+        bytes memory bytecode = type(Gtps.FinancePair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        CatPair(pair).initialize(token0, token1);
+        Gtps.FinancePair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
@@ -44,12 +44,12 @@ contract CatFactory is ICatFactory {
     }
 
     function setFeeTo(address _feeTo) external override {
-        require(msg.sender == feeToSetter, 'PolyCat: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'Gtps.Finance: FORBIDDEN');
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external override {
-        require(msg.sender == feeToSetter, 'PolyCat: FORBIDDEN');
+        require(msg.sender == feeToSetter, 'Gtps.Finance: FORBIDDEN');
         feeToSetter = _feeToSetter;
     }
 
