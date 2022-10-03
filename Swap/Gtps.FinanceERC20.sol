@@ -4,11 +4,11 @@ pragma solidity =0.6.12;
 
 import './libraries/SafeMath.sol';
 
-contract CatERC20 {
+contract Gtps.FinanceERC20 {
     using SafeMathUniswap for uint;
 
-    string public constant name = 'PolyCat LP';
-    string public constant symbol = 'CAT-LP';
+    string public constant name = 'Gtps.Finance LP';
+    string public constant symbol = 'Gtps.Finance-LP';
     uint8 public constant decimals = 18;
     uint  public totalSupply;
     mapping(address => uint) public balanceOf;
@@ -80,7 +80,7 @@ contract CatERC20 {
     }
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        require(deadline >= block.timestamp, 'PolyCat: EXPIRED');
+        require(deadline >= block.timestamp, 'Gtps.Finance: EXPIRED');
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
@@ -89,7 +89,7 @@ contract CatERC20 {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'PolyCat: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, 'Gtps.Finance: INVALID_SIGNATURE');
         _approve(owner, spender, value);
     }
 }
