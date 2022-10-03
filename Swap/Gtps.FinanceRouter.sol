@@ -2,22 +2,22 @@
 
 pragma solidity =0.6.12;
 
-import './libraries/CatLibrary.sol';
+import './libraries/Gtps.FinanceLibrary.sol';
 import './libraries/SafeMath.sol';
 import './libraries/TransferHelper.sol';
-import './interfaces/ICatRouter02.sol';
-import './interfaces/ICatFactory.sol';
+import './interfaces/IGtps.FinanceRouter02.sol';
+import './interfaces/IGtps.FinanceFactory.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IWETH.sol';
 
-contract CatRouter is ICatRouter02 {
+contract Gtps.FinanceRouter is IGtps.FinanceRouter02 {
     using SafeMathUniswap for uint;
 
     address public immutable override factory;
     address public immutable override WETH;
 
     modifier ensure(uint deadline) {
-        require(deadline >= block.timestamp, 'CatRouter: EXPIRED');
+        require(deadline >= block.timestamp, 'Gtps.FinanceRouter: EXPIRED');
         _;
     }
 
@@ -40,21 +40,21 @@ contract CatRouter is ICatRouter02 {
         uint amountBMin
     ) internal virtual returns (uint amountA, uint amountB) {
         // create the pair if it doesn't exist yet
-        if (ICatFactory(factory).getPair(tokenA, tokenB) == address(0)) {
-            ICatFactory(factory).createPair(tokenA, tokenB);
+        if (IGtps.FinanceFactory(factory).getPair(tokenA, tokenB) == address(0)) {
+            IGtps.FinanceFactory(factory).createPair(tokenA, tokenB);
         }
-        (uint reserveA, uint reserveB) = CatLibrary.getReserves(factory, tokenA, tokenB);
+        (uint reserveA, uint reserveB) = Gtps.FinanceLibrary.getReserves(factory, tokenA, tokenB);
         if (reserveA == 0 && reserveB == 0) {
             (amountA, amountB) = (amountADesired, amountBDesired);
         } else {
-            uint amountBOptimal = CatLibrary.quote(amountADesired, reserveA, reserveB);
+            uint amountBOptimal = Gtps.FinanceLibrary.quote(amountADesired, reserveA, reserveB);
             if (amountBOptimal <= amountBDesired) {
-                require(amountBOptimal >= amountBMin, 'CatRouter: INSUFFICIENT_B_AMOUNT');
+                require(amountBOptimal >= amountBMin, 'Gtps.FinanceRouter: INSUFFICIENT_B_AMOUNT');
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
-                uint amountAOptimal = CatLibrary.quote(amountBDesired, reserveB, reserveA);
+                uint amountAOptimal = Gtps.FinanceLibrary.quote(amountBDesired, reserveB, reserveA);
                 assert(amountAOptimal <= amountADesired);
-                require(amountAOptimal >= amountAMin, 'CatRouter: INSUFFICIENT_A_AMOUNT');
+                require(amountAOptimal >= amountAMin, 'Gtps.FinanceRouter: INSUFFICIENT_A_AMOUNT');
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
         }
@@ -70,10 +70,10 @@ contract CatRouter is ICatRouter02 {
         uint deadline
     ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
         (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
-        address pair = CatLibrary.pairFor(factory, tokenA, tokenB);
+        address pair = Gtps.FinanceLibrary.pairFor(factory, tokenA, tokenB);
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
         TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = ICatPair(pair).mint(to);
+        liquidity = IGtps.FinancePair(pair).mint(to);
     }
     function addLiquidityETH(
         address token,
@@ -91,11 +91,11 @@ contract CatRouter is ICatRouter02 {
             amountTokenMin,
             amountETHMin
         );
-        address pair = CatLibrary.pairFor(factory, token, WETH);
+        address pair = Gtps.FinanceLibrary.pairFor(factory, token, WETH);
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
         IWETH(WETH).deposit{value: amountETH}();
         assert(IWETH(WETH).transfer(pair, amountETH));
-        liquidity = ICatPair(pair).mint(to);
+        liquidity = IGtps.FinancePair(pair).mint(to);
         // refund dust eth, if any
         if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
     }
@@ -110,13 +110,13 @@ contract CatRouter is ICatRouter02 {
         address to,
         uint deadline
     ) public virtual override ensure(deadline) returns (uint amountA, uint amountB) {
-        address pair = CatLibrary.pairFor(factory, tokenA, tokenB);
-        ICatPair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
-        (uint amount0, uint amount1) = ICatPair(pair).burn(to);
-        (address token0,) = CatLibrary.sortTokens(tokenA, tokenB);
+        address pair = Gtps.FinanceLibrary.pairFor(factory, tokenA, tokenB);
+        IGtps.FinancePair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        (uint amount0, uint amount1) = IGtps.FinancePair(pair).burn(to);
+        (address token0,) = Gtps.FinanceLibrary.sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
-        require(amountA >= amountAMin, 'CatRouter: INSUFFICIENT_A_AMOUNT');
-        require(amountB >= amountBMin, 'CatRouter: INSUFFICIENT_B_AMOUNT');
+        require(amountA >= amountAMin, 'Gtps.FinanceRouter: INSUFFICIENT_A_AMOUNT');
+        require(amountB >= amountBMin, 'Gtps.FinanceRouter: INSUFFICIENT_B_AMOUNT');
     }
     function removeLiquidityETH(
         address token,
@@ -149,9 +149,9 @@ contract CatRouter is ICatRouter02 {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountA, uint amountB) {
-        address pair = CatLibrary.pairFor(factory, tokenA, tokenB);
+        address pair = Gtps.FinanceLibrary.pairFor(factory, tokenA, tokenB);
         uint value = approveMax ? uint(-1) : liquidity;
-        ICatPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IGtps.FinancePair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
     }
     function removeLiquidityETHWithPermit(
@@ -163,9 +163,9 @@ contract CatRouter is ICatRouter02 {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountToken, uint amountETH) {
-        address pair = CatLibrary.pairFor(factory, token, WETH);
+        address pair = Gtps.FinanceLibrary.pairFor(factory, token, WETH);
         uint value = approveMax ? uint(-1) : liquidity;
-        ICatPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IGtps.FinancePair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
     }
 
@@ -200,9 +200,9 @@ contract CatRouter is ICatRouter02 {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountETH) {
-        address pair = CatLibrary.pairFor(factory, token, WETH);
+        address pair = Gtps.FinanceLibrary.pairFor(factory, token, WETH);
         uint value = approveMax ? uint(-1) : liquidity;
-        ICatPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IGtps.FinancePair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
             token, liquidity, amountTokenMin, amountETHMin, to, deadline
         );
@@ -213,11 +213,11 @@ contract CatRouter is ICatRouter02 {
     function _swap(uint[] memory amounts, address[] memory path, address _to) internal virtual {
         for (uint i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0,) = CatLibrary.sortTokens(input, output);
+            (address token0,) = Gtps.FinanceLibrary.sortTokens(input, output);
             uint amountOut = amounts[i + 1];
             (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-            address to = i < path.length - 2 ? CatLibrary.pairFor(factory, output, path[i + 2]) : _to;
-            ICatPair(CatLibrary.pairFor(factory, input, output)).swap(
+            address to = i < path.length - 2 ? Gtps.FinanceLibrary.pairFor(factory, output, path[i + 2]) : _to;
+            IGtps.FinancePair(Gtps.FinanceLibrary.pairFor(factory, input, output)).swap(
                 amount0Out, amount1Out, to, new bytes(0)
             );
         }
@@ -229,10 +229,10 @@ contract CatRouter is ICatRouter02 {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-        amounts = CatLibrary.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'CatRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        amounts = Gtps.FinanceLibrary.getAmountsOut(factory, amountIn, path);
+        require(amounts[amounts.length - 1] >= amountOutMin, 'Gtps.FinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
-            path[0], msg.sender, CatLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+            path[0], msg.sender, Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, to);
     }
@@ -243,10 +243,10 @@ contract CatRouter is ICatRouter02 {
         address to,
         uint deadline
     ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
-        amounts = CatLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'CatRouter: EXCESSIVE_INPUT_AMOUNT');
+        amounts = Gtps.FinanceLibrary.getAmountsIn(factory, amountOut, path);
+        require(amounts[0] <= amountInMax, 'Gtps.FinanceRouter: EXCESSIVE_INPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
-            path[0], msg.sender, CatLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+            path[0], msg.sender, Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, to);
     }
@@ -258,11 +258,11 @@ contract CatRouter is ICatRouter02 {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        require(path[0] == WETH, 'CatRouter: INVALID_PATH');
-        amounts = CatLibrary.getAmountsOut(factory, msg.value, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'CatRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(path[0] == WETH, 'Gtps.FinanceRouter: INVALID_PATH');
+        amounts = Gtps.FinanceLibrary.getAmountsOut(factory, msg.value, path);
+        require(amounts[amounts.length - 1] >= amountOutMin, 'Gtps.FinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
-        assert(IWETH(WETH).transfer(CatLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
+        assert(IWETH(WETH).transfer(Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
     }
     function swapTokensForExactETH(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline)
@@ -272,11 +272,11 @@ contract CatRouter is ICatRouter02 {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        require(path[path.length - 1] == WETH, 'CatRouter: INVALID_PATH');
-        amounts = CatLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= amountInMax, 'CatRouter: EXCESSIVE_INPUT_AMOUNT');
+        require(path[path.length - 1] == WETH, 'Gtps.FinanceRouter: INVALID_PATH');
+        amounts = Gtps.FinanceLibrary.getAmountsIn(factory, amountOut, path);
+        require(amounts[0] <= amountInMax, 'Gtps.FinanceRouter: EXCESSIVE_INPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
-            path[0], msg.sender, CatLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+            path[0], msg.sender, Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
@@ -289,11 +289,11 @@ contract CatRouter is ICatRouter02 {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        require(path[path.length - 1] == WETH, 'CatRouter: INVALID_PATH');
-        amounts = CatLibrary.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'CatRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(path[path.length - 1] == WETH, 'Gtps.FinanceRouter: INVALID_PATH');
+        amounts = Gtps.FinanceLibrary.getAmountsOut(factory, amountIn, path);
+        require(amounts[amounts.length - 1] >= amountOutMin, 'Gtps.FinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         TransferHelper.safeTransferFrom(
-            path[0], msg.sender, CatLibrary.pairFor(factory, path[0], path[1]), amounts[0]
+            path[0], msg.sender, Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]
         );
         _swap(amounts, path, address(this));
         IWETH(WETH).withdraw(amounts[amounts.length - 1]);
@@ -307,11 +307,11 @@ contract CatRouter is ICatRouter02 {
         ensure(deadline)
         returns (uint[] memory amounts)
     {
-        require(path[0] == WETH, 'CatRouter: INVALID_PATH');
-        amounts = CatLibrary.getAmountsIn(factory, amountOut, path);
-        require(amounts[0] <= msg.value, 'CatRouter: EXCESSIVE_INPUT_AMOUNT');
+        require(path[0] == WETH, 'Gtps.FinanceRouter: INVALID_PATH');
+        amounts = Gtps.FinanceLibrary.getAmountsIn(factory, amountOut, path);
+        require(amounts[0] <= msg.value, 'Gtps.FinanceRouter: EXCESSIVE_INPUT_AMOUNT');
         IWETH(WETH).deposit{value: amounts[0]}();
-        assert(IWETH(WETH).transfer(CatLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
+        assert(IWETH(WETH).transfer(Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amounts[0]));
         _swap(amounts, path, to);
         // refund dust eth, if any
         if (msg.value > amounts[0]) TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
@@ -322,18 +322,18 @@ contract CatRouter is ICatRouter02 {
     function _swapSupportingFeeOnTransferTokens(address[] memory path, address _to) internal virtual {
         for (uint i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
-            (address token0,) = CatLibrary.sortTokens(input, output);
-            ICatPair pair = ICatPair(CatLibrary.pairFor(factory, input, output));
+            (address token0,) = Gtps.FinanceLibrary.sortTokens(input, output);
+            ICatPair pair = IGtps.FinancePair(Gtps.FinanceLibrary.pairFor(factory, input, output));
             uint amountInput;
             uint amountOutput;
             { // scope to avoid stack too deep errors
             (uint reserve0, uint reserve1,) = pair.getReserves();
             (uint reserveInput, uint reserveOutput) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
             amountInput = IERC20Uniswap(input).balanceOf(address(pair)).sub(reserveInput);
-            amountOutput = CatLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
+            amountOutput = Gtps.FinanceLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
             }
             (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
-            address to = i < path.length - 2 ? CatLibrary.pairFor(factory, output, path[i + 2]) : _to;
+            address to = i < path.length - 2 ? Gtps.FinanceLibrary.pairFor(factory, output, path[i + 2]) : _to;
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
         }
     }
@@ -345,13 +345,13 @@ contract CatRouter is ICatRouter02 {
         uint deadline
     ) external virtual override ensure(deadline) {
         TransferHelper.safeTransferFrom(
-            path[0], msg.sender, CatLibrary.pairFor(factory, path[0], path[1]), amountIn
+            path[0], msg.sender, Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amountIn
         );
         uint balanceBefore = IERC20Uniswap(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
             IERC20Uniswap(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
-            'CatRouter: INSUFFICIENT_OUTPUT_AMOUNT'
+            'Gtps.FinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
@@ -366,15 +366,15 @@ contract CatRouter is ICatRouter02 {
         payable
         ensure(deadline)
     {
-        require(path[0] == WETH, 'CatRouter: INVALID_PATH');
+        require(path[0] == WETH, 'Gtps.FinanceRouter: INVALID_PATH');
         uint amountIn = msg.value;
         IWETH(WETH).deposit{value: amountIn}();
-        assert(IWETH(WETH).transfer(CatLibrary.pairFor(factory, path[0], path[1]), amountIn));
+        assert(IWETH(WETH).transfer(Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amountIn));
         uint balanceBefore = IERC20Uniswap(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
             IERC20Uniswap(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
-            'CatRouter: INSUFFICIENT_OUTPUT_AMOUNT'
+            'Gtps.FinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
@@ -389,20 +389,20 @@ contract CatRouter is ICatRouter02 {
         override
         ensure(deadline)
     {
-        require(path[path.length - 1] == WETH, 'CatRouter: INVALID_PATH');
+        require(path[path.length - 1] == WETH, 'Gtps.FinanceRouter: INVALID_PATH');
         TransferHelper.safeTransferFrom(
-            path[0], msg.sender, CatLibrary.pairFor(factory, path[0], path[1]), amountIn
+            path[0], msg.sender, Gtps.FinanceLibrary.pairFor(factory, path[0], path[1]), amountIn
         );
         _swapSupportingFeeOnTransferTokens(path, address(this));
         uint amountOut = IERC20Uniswap(WETH).balanceOf(address(this));
-        require(amountOut >= amountOutMin, 'CatRouter: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amountOut >= amountOutMin, 'Gtps.FinanceRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).withdraw(amountOut);
         TransferHelper.safeTransferETH(to, amountOut);
     }
 
     // **** LIBRARY FUNCTIONS ****
     function quote(uint amountA, uint reserveA, uint reserveB) public pure virtual override returns (uint amountB) {
-        return CatLibrary.quote(amountA, reserveA, reserveB);
+        return Gtps.FinanceLibrary.quote(amountA, reserveA, reserveB);
     }
 
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut)
@@ -412,7 +412,7 @@ contract CatRouter is ICatRouter02 {
         override
         returns (uint amountOut)
     {
-        return CatLibrary.getAmountOut(amountIn, reserveIn, reserveOut);
+        return Gtps.FinanceLibrary.getAmountOut(amountIn, reserveIn, reserveOut);
     }
 
     function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut)
@@ -422,7 +422,7 @@ contract CatRouter is ICatRouter02 {
         override
         returns (uint amountIn)
     {
-        return CatLibrary.getAmountIn(amountOut, reserveIn, reserveOut);
+        return Gtps.FinanceLibrary.getAmountIn(amountOut, reserveIn, reserveOut);
     }
 
     function getAmountsOut(uint amountIn, address[] memory path)
@@ -432,7 +432,7 @@ contract CatRouter is ICatRouter02 {
         override
         returns (uint[] memory amounts)
     {
-        return CatLibrary.getAmountsOut(factory, amountIn, path);
+        return Gtps.FinanceLibrary.getAmountsOut(factory, amountIn, path);
     }
 
     function getAmountsIn(uint amountOut, address[] memory path)
@@ -442,6 +442,6 @@ contract CatRouter is ICatRouter02 {
         override
         returns (uint[] memory amounts)
     {
-        return CatLibrary.getAmountsIn(factory, amountOut, path);
+        return Gtps.FinanceLibrary.getAmountsIn(factory, amountOut, path);
     }
 }
