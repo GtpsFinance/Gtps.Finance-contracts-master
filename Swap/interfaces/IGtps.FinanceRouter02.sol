@@ -2,9 +2,9 @@
 
 pragma solidity >=0.6.2;
 
-import './ICatRouter01.sol';
+import './IGtps.FinanceRouter01.sol';
 
-interface ICatRouter02 is ICatRouter01 {
+interface IGtps.FinanceRouter02 is IGtps.FinanceRouter01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
